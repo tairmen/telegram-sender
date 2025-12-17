@@ -168,20 +168,26 @@ app.post("/update-prompt", async (req, res) => {
     }
 
     if (!dialogs.has(userId)) {
-      return res.status(404).json({ error: "Диалог с этим пользователем не найден" });
-    }
-
-    const history = dialogs.get(userId);
-
-    // Обновляем system prompt (первый элемент с role: system)
-    if (history.length > 0 && history[0].role === "system") {
-      history[0].content = newPrompt;
+      // Создаем новый диалог с system prompt
+      dialogs.set(userId, [
+        { role: "system", content: newPrompt }
+      ]);
+      console.log(`🧠 New dialog created for userId: ${userId}`);
+      res.json({ success: true, userId, created: true });
     } else {
-      history.unshift({ role: "system", content: newPrompt });
-    }
+      // Обновляем существующий диалог
+      const history = dialogs.get(userId);
 
-    console.log(`🧠 Prompt updated for userId: ${userId}`);
-    res.json({ success: true, userId });
+      // Обновляем system prompt (первый элемент с role: system)
+      if (history.length > 0 && history[0].role === "system") {
+        history[0].content = newPrompt;
+      } else {
+        history.unshift({ role: "system", content: newPrompt });
+      }
+
+      console.log(`🧠 Prompt updated for userId: ${userId}`);
+      res.json({ success: true, userId, created: false });
+    }
   } catch (err) {
     console.error("❌ /update-prompt error:", err);
     res.status(500).json({ error: err.message });
